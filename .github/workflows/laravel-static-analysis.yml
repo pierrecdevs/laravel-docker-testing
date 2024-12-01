@@ -16,7 +16,9 @@ jobs:
           coverage: none
  
       - name: Install composer dependencies
+        working-directory: ./app
         run: composer install -n --prefer-dist
  
       - name: Run Static Analysis
+        working-directory: ./app
         run: ./vendor/bin/phpstan --error-format=github
