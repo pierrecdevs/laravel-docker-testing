@@ -43,7 +43,7 @@ class ApiProductControllerTest extends TestCase
     {
         $response = $this->post('/api/products', []);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
     }
 
     #[Test]
@@ -60,28 +60,41 @@ class ApiProductControllerTest extends TestCase
 
         $response = $this->put("/api/products/{$id}", $updatedProduct);
 
-        $response->assertStatus(204);
+        $response->assertNoContent();
     }
 
     #[Test]
     public function api_product_route_should_remove_and_return_204_deleted(): void
     {
         $response = $this->post('/api/products', $this->product);
-
         $json = $response->decodeResponseJson();
         $id = $json['data']['id'];
 
         $response = $this->delete("/api/products/{$id}");
-
-        $response->assertStatus(204);
+        $response->assertNoContent();
     }
 
     #[Test]
     public function api_product_route_should_not_remove_and_return_404(): void
     {
+        $response = $this->delete('/api/products/9999');
+        $response->assertNotFound();
+    }
 
-        $response = $this->delete("/api/products/9999");
+    #[Test]
+    public function api_products_route_should_return_200_if_product_found(): void
+    {
+        $response = $this->post('/api/products', $this->product);
+        $response->assertCreated();
 
-        $response->assertStatus(404);
+        $response = $this->get('/api/products/1');
+        $response->assertOK();
+    }
+
+    #[Test]
+    public function api_products_route_should_return_404_if_product_not_found(): void
+    {
+        $response = $this->get('/api/products/1');
+        $response->assertNotFound();
     }
 }
