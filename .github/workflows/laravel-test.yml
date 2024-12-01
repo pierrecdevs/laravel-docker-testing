@@ -26,9 +26,9 @@ jobs:
         run: |
           cp .env.ci .env
           php artisan key:generate
-          php artisan cache:clear
-          php artisan config:clear
-          php artisan view:clear
+
+      - name: Directory Permissions
+        run: chmod -R 777 storage bootstrap/cache
 
       - name: Run tests
         working-directory: ./app
