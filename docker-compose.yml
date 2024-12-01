@@ -48,6 +48,8 @@ services:
     volumes:
       - ./app:/var/www/html:delegated
     working_dir: /var/www/html
+    depends_on:
+      - database
     env_file: .env
     restart: always
     ports:
@@ -60,9 +62,29 @@ services:
   composer:
     image: composer:latest
     container_name: ${APP_NAME}_composer
+    links:
+      - php
     volumes:
       - ./app:/var/www/html
     working_dir: /var/www/html
     restart: 'no'
+    networks:
+      - localdev
+
+  # Artisan
+  artisan:
+    build:
+      context: ./php
+      dockerfile: php.Dockerfile
+    container_name: ${APP_NAME}_artisan
+    volumes:
+      - ./app:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+      - database
+    links:
+      - php
+    entrypoint: ['php', '/var/www/html/artisan']
     networks:
       - localdev

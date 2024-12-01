@@ -35,8 +35,10 @@ RUN docker-php-ext-install \
   bcmath \
   zip
 
-RUN cd /usr/src && \
-  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin
+# RUN cd /usr/src && \
+#   curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 ADD xdebug.ini /etc/php8.2/conf.d/
 WORKDIR /var/www/html
