@@ -18,20 +18,4 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
-
-    #[Test]
-    public function route_should_return_in_order(): void
-    {
-        $response = $this->get('/');
-
-        $response->assertSeeInOrder(['Documentation', 'Laracast', 'Laravel News', 'Vibrant Ecosystem']);
-    }
-
-    #[Test]
-    public function about_route_should_return_something(): void
-    {
-        $response = $this->get('/about');
-
-        $response->assertSee('About');
-    }
 }

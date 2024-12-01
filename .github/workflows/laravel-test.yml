@@ -27,10 +27,6 @@ jobs:
           cp .env.ci .env
           php artisan key:generate
 
-      - name: Directory Permissions
-        working-directory: ./app
-        run: chmod -R 777 storage bootstrap/cache
-
       - name: Run tests
         working-directory: ./app
         run: php artisan test
