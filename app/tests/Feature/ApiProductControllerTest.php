@@ -25,7 +25,7 @@ class ApiProductControllerTest extends TestCase
     #[Test]
     public function api_product_route_should_return_200_success(): void
     {
-        $response = $this->get('/api/products');
+        $response = $this->getJson(route('products.index'));
 
         $response->assertOk();
     }
@@ -33,7 +33,7 @@ class ApiProductControllerTest extends TestCase
     #[Test]
     public function api_product_route_should_return_201_created(): void
     {
-        $response = $this->post('/api/products', $this->product);
+        $response = $this->postJson(route('products.store'), $this->product);
 
         $response->assertCreated();
     }
@@ -41,7 +41,7 @@ class ApiProductControllerTest extends TestCase
     #[Test]
     public function api_product_route_should_return_422_error(): void
     {
-        $response = $this->post('/api/products', []);
+        $response = $this->postJson(route('products.store'), []);
 
         $response->assertUnprocessable();
     }
@@ -52,13 +52,13 @@ class ApiProductControllerTest extends TestCase
         $updatedProduct = $this->product;
         $updatedProduct['description'] = 'PHPUNIT_TEST_PRODUCT_DESCRIPTION';
 
-        $response = $this->post('/api/products', $this->product);
+        $response = $this->postJson(route('products.store'), $this->product);
 
         $response->assertCreated();
-        $json = $response->decodeResponseJson();
+        $json = $response->json();
         $id = $json['data']['id'];
 
-        $response = $this->put("/api/products/{$id}", $updatedProduct);
+        $response = $this->putJson(route('products.update', $id), $updatedProduct);
 
         $response->assertNoContent();
     }
@@ -66,35 +66,35 @@ class ApiProductControllerTest extends TestCase
     #[Test]
     public function api_product_route_should_remove_and_return_204_deleted(): void
     {
-        $response = $this->post('/api/products', $this->product);
-        $json = $response->decodeResponseJson();
+        $response = $this->postJson(route('products.store'), $this->product);
+        $json = $response->json();
         $id = $json['data']['id'];
 
-        $response = $this->delete("/api/products/{$id}");
+        $response = $this->deleteJson(route('products.destroy', $id));
         $response->assertNoContent();
     }
 
     #[Test]
     public function api_product_route_should_not_remove_and_return_404(): void
     {
-        $response = $this->delete('/api/products/9999');
+        $response = $this->deleteJson(route('products.destroy', 999));
         $response->assertNotFound();
     }
 
     #[Test]
     public function api_products_route_should_return_200_if_product_found(): void
     {
-        $response = $this->post('/api/products', $this->product);
+        $response = $this->postJson(route('products.store'), $this->product);
         $response->assertCreated();
 
-        $response = $this->get('/api/products/1');
+        $response = $this->getJson(route('products.show', 1));
         $response->assertOK();
     }
 
     #[Test]
     public function api_products_route_should_return_404_if_product_not_found(): void
     {
-        $response = $this->get('/api/products/1');
+        $response = $this->getJson(route('products.show', 1));
         $response->assertNotFound();
     }
 }
