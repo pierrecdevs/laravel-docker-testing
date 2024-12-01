@@ -18,14 +18,17 @@ jobs:
           coverage: none
  
       - name: Run composer install
+        working-directory: ./app
         run: composer install -n --prefer-dist
  
       - name: Prepare Laravel Application
+        working-directory: ./app
         run: |
           cp .env.ci .env
           php artisan key:generate
  
       - name: Run tests
+        working-directory: ./app
         run: php artisan test
 
       - name: Get Composer cache directory
