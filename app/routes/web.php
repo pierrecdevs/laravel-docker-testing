@@ -10,4 +10,8 @@ Route::get('/about', function () {
     return 'About';
 });
 
+Route::get('/login', function () {
+    return response()->json(['status' => 200, 'message' => 'OK']);
+})->name('login');
+
 Route::get('/help', function () {});
