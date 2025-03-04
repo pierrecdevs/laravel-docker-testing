@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\LoginToken;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\Sanctum;
 
 class AuthController extends Controller
 {
@@ -37,11 +36,6 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        /*$user = User::where('email', $request->email)->first();*/
-        /**/
-        /*if (!$user || !Hash::check($request->password, $user->password)) {*/
-        /*    return response()->json(['status' => 422, 'message' => 'Invalid credentials'], 422);*/
-        /*}*/
 
         if (Auth::attempt($credentials)) {
 
@@ -95,12 +89,20 @@ class AuthController extends Controller
 
         try {
 
-            $user = User::create([
+            $options = [
                 'firstname' => $fields['firstname'],
                 'lastname' => $fields['lastname'],
                 'email' => $fields['email'],
                 'password' => Hash::make($fields['password']),
-            ]);
+            ];
+
+            /** NOTE: Temporary for SL
+             * if ($fields['avkey']) {
+             *    $options['avkey'] = $fields['avkey'];
+             *}
+             */
+
+            $user = User::create($options);
 
             $token = $user->createToken($user->id)->plainTextToken;
 
@@ -163,7 +165,99 @@ class AuthController extends Controller
             ->json([
                 'status' => 200,
                 'message' => 'logged out'
-            ], 200)
+            ])
             ->withCookie($cookie);
+    }
+
+    public function verify(Request $request, $token)
+    {
+        $token = LoginToken::whereToken(hash('sha256', $token))->firstOrFail();
+
+        if (!$request->hasValidSignature()) {
+            return response()->json([
+                'status' => 401,
+                'message' => 'invalid sig',
+            ], 401);
+        }
+        if (!$token->isValid()) {
+            return response()->json([
+                'status' => 401,
+                'message' => 'invalid token',
+            ], 401);
+        }
+
+        $token->consume();
+
+        Auth::login($token->user);
+
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
+
+        $user = auth()->guard('sanctum')->user();
+
+        $token = $user->createToken($user->id);
+
+        $cookie = cookie('auth_token', $token->plainTextToken, 60 * 24 * 7); // set the cookie for 7 days
+
+        return response()->json([
+            'status' => 200,
+            'message' => [
+                'user' => $user,
+                'token' => $token->plainTextToken,
+            ]
+        ])->withCookie($cookie);
+    }
+
+    public function generate(Request $request)
+    {
+        $validated = $request->validate([
+            'firstname' => 'required|string|max:32',
+            'lastname' => 'required|string|max:32',
+            'avkey' => 'required|string',
+        ]);
+
+        if (!$validated) {
+            return response()->json([
+                'status' => 401,
+                'message' => 'invalid request',
+            ], 401);
+        }
+
+        $user = User::where('avkey', $request->json('avkey'))->first();
+
+        if ($user) {
+            /**
+             * NOTE: this is for SL
+             * $url = $user->generateTokenUrl($user->avkey, $user->firstname, $user->lastname);
+             */
+            $url = $user->generateTokenUrl();
+            $parts = parse_url($url);
+
+            parse_str($parts['query'], $query);
+            $path = $parts['path'];
+
+            $url = $path . '?' . $parts['query'];
+            return response()->json([
+                'status' => 200,
+                'message' => [
+                    'url' =>  $url, //[
+                    /*'query' => $query,*/
+                    /*'path' => $path,*/
+                    /*'host' => $parts['host'] . ':' . $parts['port'],*/
+                    //]
+                ],
+            ]);
+        } else {
+            return response()->json([
+                'status' => 404,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 400,
+            'message' => 'Unknown issue.',
+        ]);
     }
 }

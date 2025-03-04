@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\LoginToken;
 use App\Models\User;
-use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -13,6 +14,7 @@ use Tests\TestCase;
 class AuthControllerTest extends TestCase
 {
     use RefreshDatabase;
+
 
     private $user = [
         'firstname' => 'PHPUNIT_TEST_FIRSTNAME',
@@ -249,5 +251,40 @@ class AuthControllerTest extends TestCase
 
         // Assert / Predict
         $response->assertUnauthorized();
+    }
+
+    #[Test]
+    public function it_should_verify_token_successfully(): void
+    {
+        // Arrange / Prepare
+        $user = User::factory()->create([
+            'password' => Hash::make($this->user['password']),
+        ]);
+
+
+        // Act / Perform
+        $token = hash('sha256', 'valid_token');
+        $this->assertGuest();
+        $tokenUrl = $user->generateTokenUrl();
+        $response = $this->getJson($tokenUrl);
+
+        // Assert / Predict
+        $response
+            ->assertOk()
+            ->assertJsonStructure([
+                'status',
+                'message' => [
+                    'user' => [
+                        'id',
+                        'email',
+                        'firstname',
+                        'lastname',
+                        'created_at',
+                        'updated_at',
+                    ],
+                    'token',
+                ],
+            ]);
+        $this->assertAuthenticatedAs($user);
     }
 }
